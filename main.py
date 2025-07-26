@@ -21,31 +21,30 @@ parser.add_argument(
 
 args = parser.parse_args()
 
+print(args.file)
 list_of_dicts = []
 
-try:
-    with open(f'{args.file[0]}', 'r') as file:
-        big_str = file.read()
-        json_string_list = big_str.split('\n')
-        for i in json_string_list:
-            my_dict = json.loads(i)
-            list_of_dicts.append(my_dict)
-except JSONDecodeError:
-    pass
+for i in args.file:
+    try:
+        with open(i, 'r') as file:
+            big_str = file.read()
+            json_string_list = big_str.split('\n')
+            for i in json_string_list:
+                my_dict = json.loads(i)
+                list_of_dicts.append(my_dict)
+    except JSONDecodeError:
+        pass
+    except FileNotFoundError:
+        print('Один из указанных файлов не существует!')
 
 df = pd.DataFrame.from_dict(list_of_dicts, orient='columns')
-df_renamed=df.rename(columns={'url':'handler'})
-# print(df.head(3))
-# print(df[['url']])
-# print(df_renamed.head(3))
-# df_renamed['total'] = df_renamed[['handler']].value_counts()
+df_renamed = df.rename(columns={'url': 'handler'})
 df_changed = df_renamed['handler'].value_counts().reset_index()
 df_changed.columns = ['handler', 'total']
-# final_df = df_changed.groupby('response_time').agg({'response_time': 'mean'})
-# print(final_df)
-# print(df_changed)
 
 groupby_df = df_renamed.groupby('handler').agg({'response_time': 'mean'}).reset_index()
 groupby_df.columns = ['handler', 'avg_response_time']
-print(df_changed)
-print(groupby_df)
+
+final_df = pd.merge(df_changed, groupby_df, on='handler')
+
+print(final_df)
